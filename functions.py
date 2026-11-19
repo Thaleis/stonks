@@ -1,5 +1,5 @@
 import ast
-
+import functions as f
 
 
 def validar_resposta(mensagem, opcoes):
@@ -55,10 +55,6 @@ def ler_decimal(mensagem, minimo=None):
             print(f"O valor deve ser no mínimo {minimo}!")
         else:
             return numero
-
-
-
-
 
 
 def carregar_produtos():

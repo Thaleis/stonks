@@ -1,5 +1,6 @@
 import functions as f
 
+
 def inicio_do_sistema():
     print("=" * 37)
 
@@ -16,7 +17,7 @@ def inicio_do_sistema():
 6. Excluir Produto
 7. Sair
 """)
-    
+
     print("=" * 37)
 
     opcao = f.ler_inteiro("Selecione uma opção: ", minimo=1, maximo=7)
@@ -24,7 +25,6 @@ def inicio_do_sistema():
     print("=" * 37)
 
     return opcao
-
 
 
 def adicionar_produto():
@@ -40,10 +40,9 @@ def adicionar_produto():
     produto = {"nome": nome_produto,
                "quantidade": qtd_produto,
                "preço": preco_produto}
-    
+
     with open("produtos.txt", "a", encoding="utf-8") as lista:
         lista.write(f"{produto}\n")
-
 
 
 def consultar_produto():
@@ -69,7 +68,6 @@ def consultar_produto():
         print("Produto não encontrado!")
 
 
-
 def listar():
     produtos = f.carregar_produtos()
     if not produtos:
@@ -86,9 +84,38 @@ def listar():
         preco = produto.get("preço", 0.0)
         total = qtd * preco
         valor_estoque += total
-        print(f"{nome:<20} {qtd:>6} {'R$ ' + f'{preco:.2f}':>12} {'R$ ' + f'{total:.2f}':>12}")
+        print(
+            f"{nome:<20} {qtd:>6} {'R$ ' + f'{preco:.2f}':>12} {'R$ ' + f'{total:.2f}':>12}")
 
     print("-" * 53)
     print(f"{len(produtos)} produto(s) | Valor total em estoque: R$ {valor_estoque:.2f}")
 
 
+def alterarquantidade():
+    produtos = f.carregar_produtos()
+    if not produtos:
+        print("Nenhum produto cadastrado ainda!")
+        return
+    print("Qual produto deseja alterar a quantidade?")
+    nome = f.ler_texto("- ")
+    encontrado = False
+    for produto in produtos:
+        if str(produto.get("nome", "")).lower() == nome.lower():
+            produto_encontrado = produto
+            encontrado = True
+            break
+    if not encontrado:
+
+        print("Produto não encontrado...")
+        return
+    print(
+        f"Quantidade atual de {produto_encontrado.get('nome', 0)}: {produto_encontrado.get('quantidade', 0)}")
+    print("Nova quantidade")
+    nova_qtd = f.ler_inteiro("- ", minimo=0)
+    produto_encontrado["quantidade"] = nova_qtd
+
+    with open("produtos.txt", "w", encoding="utf-8") as lista:
+        for produto in produtos:
+            lista.write(f"{produto} \n")
+
+    print("Quantidade alterada com sucesso!")

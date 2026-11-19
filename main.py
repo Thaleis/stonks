@@ -25,7 +25,7 @@ while True:
         input("\nPressione Enter para voltar ao menu...")
 
     elif opcao == 4:
-        pass
+        o.alterarquantidade()
 
     elif opcao == 5:
         pass
