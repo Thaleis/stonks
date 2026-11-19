@@ -28,7 +28,11 @@ while True:
         o.alterarquantidade()
 
     elif opcao == 5:
-        pass
+        while True:
+            o.consultar_produto()
+            if f.validar_resposta("Deseja continuar? [S] [N]: ", ["S", "N"]) == "N":
+                break
+            print()
 
     elif opcao == 6:
         pass

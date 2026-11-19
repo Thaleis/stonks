@@ -1,4 +1,5 @@
 import functions as f
+import ast
 
 
 def inicio_do_sistema():
@@ -119,3 +120,63 @@ def alterarquantidade():
             lista.write(f"{produto} \n")
 
     print("Quantidade alterada com sucesso!")
+
+
+
+def alterar_preco_produto(caminho_arquivo="produtos.txt"):
+    try:
+        with open(caminho_arquivo, "r", encoding="utf-8") as arquivo:
+            linhas = [linha.strip() for linha in arquivo if linha.strip()]
+    except FileNotFoundError:
+        print("Ficheiro 'produtos.txt' não encontrado.")
+        return
+
+    if not linhas:
+        print("Não existem produtos registados.")
+        return
+
+    produtos = []
+    for linha in linhas:
+        try:
+            produtos.append(ast.literal_eval(linha))
+        except (ValueError, SyntaxError):
+            print(f"Linha inválida ignorada em {caminho_arquivo}: {linha}")
+
+    if not produtos:
+        print("Nenhum produto válido encontrado.")
+        return
+
+    print("\n=== PRODUTOS DISPONÍVEIS ===")
+    for indice, produto in enumerate(produtos, start=1):
+        print(
+            f"{indice} - {produto['nome']} | "
+            f"Preço atual: {produto['preço']:.2f} | "
+            f"Quantidade: {produto['quantidade']}"
+        )
+
+    nome_procurado = input("\nNome do produto para alterar o valor: ").strip().lower()
+
+    for produto in produtos:
+        if produto["nome"].strip().lower() == nome_procurado:
+            try:
+                novo_valor = float(
+                    input(f"Novo valor para '{produto['nome']}': ").replace(",", ".")
+                )
+            except ValueError:
+                print("Valor inválido. Introduz um número.")
+                return
+
+            if novo_valor < 0:
+                print("O valor não pode ser negativo.")
+                return
+
+            produto["preço"] = round(novo_valor, 2)
+
+            with open(caminho_arquivo, "w", encoding="utf-8") as arquivo:
+                for item in produtos:
+                    arquivo.write(f"{item}\n")
+
+            print(f"Valor de '{produto['nome']}' atualizado para {produto['preço']:.2f}.")
+            return
+
+    print("Produto não encontrado.")
