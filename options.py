@@ -1,30 +1,22 @@
 import functions as f
-import ast
 
 
 def inicio_do_sistema():
     print("=" * 37)
-
     print("Stonks - Sistema de Gestão de Estoque")
-
     print("=" * 37)
-
     print("""
 1. Cadastrar
-2. Consultar Produto 
+2. Consultar Produto
 3. Listar Produtos
 4. Alterar Quant. do Produto
 5. Alterar Valor do Produto
 6. Excluir Produto
 7. Sair
 """)
-
     print("=" * 37)
-
     opcao = f.ler_inteiro("Selecione uma opção: ", minimo=1, maximo=7)
-
     print("=" * 37)
-
     return opcao
 
 
@@ -32,41 +24,38 @@ def adicionar_produto():
     print("Qual o nome do produto?")
     nome_produto = f.ler_texto("- ").capitalize()
 
+    if f.buscar_produto(f.carregar_produtos(), nome_produto):
+        print(f"O produto '{nome_produto}' já está cadastrado!")
+        return
+
     print(f"Qual a quantidade inicial de {nome_produto}? (Enter = 0)")
-    qtd_produto = f.ler_inteiro("- ", minimo=0, padrao=0)
+    qtd_produto = f.ler_inteiro("- ", minimo=0, maximo=f.VALOR_MAXIMO, padrao=0)
 
     print("Qual o valor unitário desse produto?")
     preco_produto = f.ler_decimal("- ", minimo=0)
 
-    produto = {"nome": nome_produto,
-               "quantidade": qtd_produto,
-               "preço": preco_produto}
-
-    with open("produtos.txt", "a", encoding="utf-8") as lista:
-        lista.write(f"{produto}\n")
+    if f.adicionar_ao_arquivo({"nome": nome_produto,
+                               "quantidade": qtd_produto,
+                               "preço": round(preco_produto, 2)}):
+        print(f"Produto '{nome_produto}' cadastrado com sucesso!")
 
 
 def consultar_produto():
-    print("Qual produto deseja consultar?")
-    nome = f.ler_texto("- ")
-
     produtos = f.carregar_produtos()
     if not produtos:
         print("Nenhum produto cadastrado ainda!")
         return
 
-    encontrado = False
-    for produto in produtos:
-        if str(produto.get("nome", "")).lower() == nome.lower():
-            preco = produto.get("preço", produto.get("preco", 0.0))
-            print("\nProduto encontrado!")
-            print(f"Nome: {produto['nome']}")
-            print(f"Quantidade: {produto.get('quantidade', 0)}")
-            print(f"Preço: R$ {preco:.2f}")
-            encontrado = True
-
-    if not encontrado:
+    print("Qual produto deseja consultar?")
+    produto = f.buscar_produto(produtos, f.ler_texto("- "))
+    if produto is None:
         print("Produto não encontrado!")
+        return
+
+    print("\nProduto encontrado!")
+    print(f"Nome: {produto['nome']}")
+    print(f"Quantidade: {produto['quantidade']}")
+    print(f"Preço: R$ {produto['preço']:.2f}")
 
 
 def listar():
@@ -80,155 +69,82 @@ def listar():
 
     valor_estoque = 0
     for produto in produtos:
-        nome = produto.get("nome", "")
-        qtd = produto.get("quantidade", 0)
-        preco = produto.get("preço", 0.0)
-        total = qtd * preco
+        total = produto["quantidade"] * produto["preço"]
         valor_estoque += total
-        print(
-            f"{nome:<20} {qtd:>6} {'R$ ' + f'{preco:.2f}':>12} {'R$ ' + f'{total:.2f}':>12}")
+        preco_txt = f"R$ {produto['preço']:.2f}"
+        total_txt = f"R$ {total:.2f}"
+        print(f"{produto['nome']:<20} {produto['quantidade']:>6} "
+              f"{preco_txt:>12} {total_txt:>12}")
 
     print("-" * 53)
     print(f"{len(produtos)} produto(s) | Valor total em estoque: R$ {valor_estoque:.2f}")
 
 
-def alterarquantidade():
+def alterar_quantidade():
     produtos = f.carregar_produtos()
     if not produtos:
         print("Nenhum produto cadastrado ainda!")
         return
+
     print("Qual produto deseja alterar a quantidade?")
-    nome = f.ler_texto("- ")
-    encontrado = False
-    for produto in produtos:
-        if str(produto.get("nome", "")).lower() == nome.lower():
-            produto_encontrado = produto
-            encontrado = True
-            break
-    if not encontrado:
-
-        print("Produto não encontrado...")
+    produto = f.buscar_produto(produtos, f.ler_texto("- "))
+    if produto is None:
+        print("Produto não encontrado!")
         return
-    print(
-        f"Quantidade atual de {produto_encontrado.get('nome', 0)}: {produto_encontrado.get('quantidade', 0)}")
+
+    print(f"Quantidade atual de {produto['nome']}: {produto['quantidade']}")
     print("Nova quantidade")
-    nova_qtd = f.ler_inteiro("- ", minimo=0)
-    produto_encontrado["quantidade"] = nova_qtd
+    produto["quantidade"] = f.ler_inteiro("- ", minimo=0, maximo=f.VALOR_MAXIMO)
 
-    with open("produtos.txt", "w", encoding="utf-8") as lista:
-        for produto in produtos:
-            lista.write(f"{produto} \n")
-
-    print("Quantidade alterada com sucesso!")
+    if f.salvar_produtos(produtos):
+        print("Quantidade alterada com sucesso!")
 
 
-
-def alterar_preco_produto(caminho_arquivo="produtos.txt"):
-    try:
-        with open(caminho_arquivo, "r", encoding="utf-8") as arquivo:
-            linhas = [linha.strip() for linha in arquivo if linha.strip()]
-    except FileNotFoundError:
-        print("Ficheiro 'produtos.txt' não encontrado.")
-        return
-
-    if not linhas:
-        print("Não existem produtos registados.")
-        return
-
-    produtos = []
-    for linha in linhas:
-        try:
-            produtos.append(ast.literal_eval(linha))
-        except (ValueError, SyntaxError):
-            print(f"Linha inválida ignorada em {caminho_arquivo}: {linha}")
-
+def alterar_preco_produto():
+    produtos = f.carregar_produtos()
     if not produtos:
-        print("Nenhum produto válido encontrado.")
+        print("Nenhum produto cadastrado ainda!")
         return
 
     print("\n=== PRODUTOS DISPONÍVEIS ===")
-    for indice, produto in enumerate(produtos, start=1):
-        print(
-            f"{indice} - {produto['nome']} | "
-            f"Preço atual: {produto['preço']:.2f} | "
-            f"Quantidade: {produto['quantidade']}"
-        )
+    f.mostrar_produtos_numerados(produtos)
 
-    nome_procurado = input("\nNome do produto para alterar o valor: ").strip().lower()
-
-    for produto in produtos:
-        if produto["nome"].strip().lower() == nome_procurado:
-            try:
-                novo_valor = float(
-                    input(f"Novo valor para '{produto['nome']}': ").replace(",", ".")
-                )
-            except ValueError:
-                print("Valor inválido. Introduz um número.")
-                return
-
-            if novo_valor < 0:
-                print("O valor não pode ser negativo.")
-                return
-
-            produto["preço"] = round(novo_valor, 2)
-
-            with open(caminho_arquivo, "w", encoding="utf-8") as arquivo:
-                for item in produtos:
-                    arquivo.write(f"{item}\n")
-
-            print(f"Valor de '{produto['nome']}' atualizado para {produto['preço']:.2f}.")
-            return
-
-    print("Produto não encontrado.")
-
-def excluir_produto(caminho_arquivo="produtos.txt"):
-    produtos = []
-
-    # Carregar produtos cadastrados
-    try:
-        with open(caminho_arquivo, "r", encoding="utf-8") as arquivo:
-            for linha in arquivo:
-                try:
-                    produtos.append(ast.literal_eval(linha))
-                except (ValueError, SyntaxError):
-                    continue
-
-    except FileNotFoundError:
-        print("Arquivo de produtos não encontrado.")
+    print("\nQual produto deseja alterar o valor?")
+    produto = f.buscar_produto(produtos, f.ler_texto("- "))
+    if produto is None:
+        print("Produto não encontrado!")
         return
 
-    # Verificar se existem produtos
+    print(f"Preço atual de {produto['nome']}: R$ {produto['preço']:.2f}")
+    print("Novo valor")
+    produto["preço"] = round(f.ler_decimal("- ", minimo=0), 2)
+
+    if f.salvar_produtos(produtos):
+        print(f"Valor de '{produto['nome']}' atualizado para R$ {produto['preço']:.2f}.")
+
+
+def excluir_produto():
+    produtos = f.carregar_produtos()
     if not produtos:
-        print("Nenhum produto cadastrado.")
+        print("Nenhum produto cadastrado ainda!")
         return
 
-    # Mostrar produtos disponíveis
     print("\n=== EXCLUIR PRODUTO ===")
+    f.mostrar_produtos_numerados(produtos)
 
-    for indice, produto in enumerate(produtos, start=1):
-        print(
-            f"{indice} - {produto['nome']} | "
-            f"Preço: R$ {produto['preço']:.2f} | "
-            f"Quantidade: {produto['quantidade']}"
-        )
-
-    # Escolher produto
-    try:
-        escolha = int(input("\nDigite o número do produto que deseja excluir: "))
-    except ValueError:
-        print("Digite um número válido.")
+    escolha = f.ler_inteiro("\nNúmero do produto a excluir (Enter = cancelar): ",
+                            minimo=1, maximo=len(produtos), padrao=0)
+    if escolha == 0:
+        print("Exclusão cancelada.")
         return
 
-    if escolha < 1 or escolha > len(produtos):
-        print("Opção inválida.")
+    produto = produtos[escolha - 1]
+    confirmar = f.validar_resposta(
+        f"Confirma a exclusão de '{produto['nome']}'? [S] [N]: ", ["S", "N"])
+    if confirmar == "N":
+        print("Exclusão cancelada.")
         return
 
-    # Remover produto
-    produto_excluido = produtos.pop(escolha - 1)
-
-    # Atualizar arquivo
-    with open(caminho_arquivo, "w", encoding="utf-8") as arquivo:
-        for item in produtos:
-            arquivo.write(f"{item}\n")
-
-    print(f"\nProduto '{produto_excluido['nome']}' excluído com sucesso!")
+    produtos.pop(escolha - 1)
+    if f.salvar_produtos(produtos):
+        print(f"Produto '{produto['nome']}' excluído com sucesso!")
