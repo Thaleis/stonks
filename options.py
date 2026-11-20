@@ -180,3 +180,55 @@ def alterar_preco_produto(caminho_arquivo="produtos.txt"):
             return
 
     print("Produto não encontrado.")
+
+def excluir_produto(caminho_arquivo="produtos.txt"):
+    produtos = []
+
+    # Carregar produtos cadastrados
+    try:
+        with open(caminho_arquivo, "r", encoding="utf-8") as arquivo:
+            for linha in arquivo:
+                try:
+                    produtos.append(ast.literal_eval(linha))
+                except (ValueError, SyntaxError):
+                    continue
+
+    except FileNotFoundError:
+        print("Arquivo de produtos não encontrado.")
+        return
+
+    # Verificar se existem produtos
+    if not produtos:
+        print("Nenhum produto cadastrado.")
+        return
+
+    # Mostrar produtos disponíveis
+    print("\n=== EXCLUIR PRODUTO ===")
+
+    for indice, produto in enumerate(produtos, start=1):
+        print(
+            f"{indice} - {produto['nome']} | "
+            f"Preço: R$ {produto['preço']:.2f} | "
+            f"Quantidade: {produto['quantidade']}"
+        )
+
+    # Escolher produto
+    try:
+        escolha = int(input("\nDigite o número do produto que deseja excluir: "))
+    except ValueError:
+        print("Digite um número válido.")
+        return
+
+    if escolha < 1 or escolha > len(produtos):
+        print("Opção inválida.")
+        return
+
+    # Remover produto
+    produto_excluido = produtos.pop(escolha - 1)
+
+    # Atualizar arquivo
+    with open(caminho_arquivo, "w", encoding="utf-8") as arquivo:
+        for item in produtos:
+            arquivo.write(f"{item}\n")
+
+    print(f"\nProduto '{produto_excluido['nome']}' excluído com sucesso!")
